@@ -4,20 +4,20 @@ import opennlp.tools.util.Span
 import org.springframework.web.bind.annotation.*
 
 @RestController
-@RequestMapping("api/v1/ner")
+@RequestMapping("api/v1/ner/{modelName}/{corpus}/{type}")
 class NERController(private val trainingService: NERService) {
-    @PostMapping("train")
-    fun train(@RequestParam type: String,
-              @RequestParam corpus: String,
-              @RequestParam(required = false) modelName: String = "default",
+    @PostMapping
+    fun train(@PathVariable type: String,
+              @PathVariable corpus: String,
+              @PathVariable modelName: String,
               @RequestParam(required = false) modifiedAfter: Long = 0): String {
         return trainingService.train(corpus = corpus, type = type, modifiedAfter = modifiedAfter, modelName = modelName)
     }
 
     @GetMapping("run")
-    fun run(@RequestParam modelName: String,
-            @RequestParam type: String,
-            @RequestParam corpus: String,
+    fun run(@PathVariable modelName: String,
+            @PathVariable type: String,
+            @PathVariable corpus: String,
             @RequestParam sentence: String): Array<out Span>? {
         return trainingService.run(modelName = modelName, type = type, corpus = corpus, sentence = sentence)
     }
