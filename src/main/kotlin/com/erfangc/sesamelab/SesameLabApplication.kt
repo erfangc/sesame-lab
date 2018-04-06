@@ -1,5 +1,7 @@
 package com.erfangc.sesamelab
 
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDB
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder
 import opennlp.tools.namefind.NameFinderME
 import opennlp.tools.namefind.NameSampleDataStream
 import opennlp.tools.namefind.TokenNameFinderFactory
@@ -26,20 +28,7 @@ fun main(args: Array<String>) {
 class Configuration {
     private val logger = LoggerFactory.getLogger(com.erfangc.sesamelab.Configuration::class.java)
     @Bean
-    fun commandLineRunner(): CommandLineRunner {
-        return CommandLineRunner {
-            val lineStream = PlainTextByLineStream({ FileInputStream("./en-ner-train.txt") }, StandardCharsets.UTF_8)
-            val sampleStream = NameSampleDataStream(lineStream)
-            val model = NameFinderME.train(
-                    "en",
-                    "firm",
-                    sampleStream,
-                    TrainingParameters.defaultParams(),
-                    TokenNameFinderFactory()
-            )
-            val outFile = File("./en-ner-model.bin")
-            model.serialize(outFile)
-            logger.info("Serialized output to ${outFile.absoluteFile}")
-        }
+    fun dynamoDB(): AmazonDynamoDB {
+        return AmazonDynamoDBClientBuilder.defaultClient()
     }
 }
