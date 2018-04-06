@@ -1,6 +1,7 @@
 package com.erfangc.sesamelab.corpus
 
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB
+import com.amazonaws.services.dynamodbv2.document.DynamoDB
 import com.amazonaws.services.dynamodbv2.model.AttributeValue
 import com.amazonaws.services.dynamodbv2.model.GetItemResult
 import com.amazonaws.services.dynamodbv2.model.PutItemResult
@@ -16,16 +17,13 @@ class CorpusBuilderServiceTest {
 
     @Test
     fun tag() {
-        val mock = mock<AmazonDynamoDB> {
-            on { getItem(anyString(), any()) } doReturn GetItemResult().withItem(
-                    mapOf(
-                            "createdOn" to AttributeValue().withN(nanoTime().toString()),
-                            "createdBy" to AttributeValue().withS("kyle")
-                    )
-            )
-            on { putItem(any()) } doReturn PutItemResult()
+        val amazonDynamoDB = mock<AmazonDynamoDB> {
+
         }
-        val service = CorpusBuilderService(mock)
+        val dynamoDB = mock<DynamoDB> {
+
+        }
+        val service = CorpusBuilderService(amazonDynamoDB = amazonDynamoDB, dynamoDB = dynamoDB)
         val id = service.put(id = "123", corpus = "news", content = "<START:foo> Foo <END> bar", user = "joe")
         assertEquals("123", id)
     }

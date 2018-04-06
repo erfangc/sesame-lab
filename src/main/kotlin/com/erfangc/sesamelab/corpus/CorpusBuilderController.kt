@@ -8,8 +8,21 @@ import java.security.Principal
 @RequestMapping("api/v1/corpus/{corpus}")
 class CorpusBuilderController(private val corpusBuilderService: CorpusBuilderService) {
 
+    @DeleteMapping("{id}")
+    fun delete(@PathVariable id: String) {
+        corpusBuilderService.delete(id)
+    }
+
+    @GetMapping("{id}")
+    fun get(@PathVariable id: String): JsonNode {
+        return corpusBuilderService.getById(id)
+    }
+
     @PostMapping
-    fun put(@RequestBody content: String, @PathVariable corpus: String, @RequestParam id: String?, principal: Principal?): String {
+    fun put(@RequestBody content: String,
+            @PathVariable corpus: String,
+            @RequestParam id: String?,
+            principal: Principal?): String {
         return corpusBuilderService.put(id, content, principal?.name ?: "anonymous", corpus)
     }
 

@@ -2,6 +2,7 @@ package com.erfangc.sesamelab
 
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder
+import com.amazonaws.services.dynamodbv2.document.DynamoDB
 import com.amazonaws.services.s3.AmazonS3
 import com.amazonaws.services.s3.AmazonS3ClientBuilder
 import org.springframework.boot.autoconfigure.SpringBootApplication
@@ -22,8 +23,14 @@ class Configuration {
     fun dynamoDB(): AmazonDynamoDB {
         return AmazonDynamoDBClientBuilder.defaultClient()
     }
+
     @Bean
     fun amazonS3(): AmazonS3 {
         return AmazonS3ClientBuilder.defaultClient()
+    }
+
+    @Bean
+    fun dynamoDB(amazonDynamoDB: AmazonDynamoDB): DynamoDB {
+        return DynamoDB(amazonDynamoDB)
     }
 }
