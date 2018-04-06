@@ -42,6 +42,7 @@ class NERService(private val corpusBuilderService: CorpusBuilderService, private
                 TrainingParameters.defaultParams(),
                 TokenNameFinderFactory()
         )
+        // TODO record model metadata in a table somewhere
         val modelOutFile = File.createTempFile(modelName, ".bin")
         model.serialize(modelOutFile)
         amazonS3.putObject(bucketName, "$modelName.bin", modelOutFile)
@@ -51,19 +52,23 @@ class NERService(private val corpusBuilderService: CorpusBuilderService, private
 
     fun run(modelName: String,
             sentence: String): Array<out Span>? {
-        // TODO we need to cache the InputStream objects loaded from S3, and evict said cache via message broker
+        // TODO we need to cache the InputStream objects loaded from S3, and evict said cache via message broker since we may be running multiple instances of this server
         /*
-        create the tokenizer
+        create the tokenizer - we need it to break up the incoming sentence
          */
         logger.info("Creating tokenizer for $modelName, sentence=$sentence")
         val tokenModelIS = amazonS3.getObject(bucketName, "en-token.bin").objectContent
         val tokenModel = TokenizerModel(tokenModelIS)
         val tokenizer = TokenizerME(tokenModel)
 
+        /*
+        load the trained model from S3
+         */
         val modelInputStream = amazonS3
                 .getObject(bucketName, "$modelName.bin")
                 .objectContent
         val model = TokenNameFinderModel(modelInputStream)
+
         logger.info("Loaded model: $modelName.bin")
         val nameFinder = NameFinderME(model)
         val tokens = tokenizer.tokenize(sentence)
