@@ -17,7 +17,7 @@ import java.util.*
 class CorpusBuilderService(private val amazonDynamoDB: AmazonDynamoDB) {
 
     private val objectMapper = ObjectMapper()
-    private val tableName = "annotated_named_entities"
+    private val tableName = "NamedEntities"
     private val dynamoDB = DynamoDB(amazonDynamoDB)
     private val logger = LoggerFactory.getLogger(CorpusBuilderService::class.java)
 
