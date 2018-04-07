@@ -17,8 +17,8 @@ import static java.util.Collections.singletonList;
 @EnableWebSecurity(debug = true)
 public class WebSecurityConfiguration extends WebSecurityConfigurerAdapter {
 
-    private String apiAudience = System.getProperty("auth0.apiAudience");
-    private String issuer = System.getProperty("auth0.issuer");
+    private String apiAudience = System.getenv("AUTH0_API_AUDIENCE");
+    private String issuer = System.getenv("AUTH0_ISSUER");
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
