@@ -4,7 +4,10 @@ import com.fasterxml.jackson.databind.JsonNode
 import org.springframework.web.bind.annotation.*
 import java.security.Principal
 
+data class Content(val body: String)
+
 @RestController
+@CrossOrigin
 @RequestMapping("api/v1/corpus/{corpus}")
 class CorpusBuilderController(private val corpusBuilderService: CorpusBuilderService) {
 
@@ -19,19 +22,19 @@ class CorpusBuilderController(private val corpusBuilderService: CorpusBuilderSer
     }
 
     @PostMapping
-    fun put(@RequestBody content: String,
+    fun put(@RequestBody content: Content,
             @PathVariable corpus: String,
             @RequestParam id: String?,
             principal: Principal?): String {
-        return corpusBuilderService.put(id, content, principal?.name ?: "anonymous", corpus)
+        return corpusBuilderService.put(id, content.body, principal?.name ?: "anonymous", corpus)
     }
 
-    @GetMapping("{creator}")
-    fun getByCreator(@PathVariable creator: String, @PathVariable corpus: String): List<JsonNode>? {
+    @GetMapping("by-creator")
+    fun getByCreator(@RequestParam creator: String, @PathVariable corpus: String): List<JsonNode>? {
         return corpusBuilderService.getByCreator(creator, corpus)
     }
 
-    @GetMapping
+    @GetMapping("all")
     fun getModifiedAfter(@RequestParam modifiedAfter: Long, @PathVariable corpus: String): List<JsonNode> {
         return corpusBuilderService.getModifiedAfter(modifiedAfter, corpus)
     }

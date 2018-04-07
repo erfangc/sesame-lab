@@ -10,8 +10,7 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import java.util.Arrays;
-
+import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 
 @Configuration
@@ -24,9 +23,9 @@ public class WebSecurityConfiguration extends WebSecurityConfigurerAdapter {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(singletonList("https://localhost:3000"));
         configuration.setAllowedHeaders(singletonList("Authorization"));
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST"));
+        configuration.setAllowedOrigins(singletonList("http://localhost:3000"));
+        configuration.setAllowedMethods(asList("GET", "POST", "OPTIONS"));
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/api/**", configuration);
         return source;
@@ -38,6 +37,8 @@ public class WebSecurityConfiguration extends WebSecurityConfigurerAdapter {
                 .forRS256(apiAudience, issuer)
                 .configure(http)
                 .authorizeRequests()
+                .mvcMatchers("/**")
+                .permitAll()
                 .antMatchers("/api/**")
                 .authenticated();
     }
