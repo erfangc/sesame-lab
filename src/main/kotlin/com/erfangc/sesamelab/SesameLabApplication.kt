@@ -8,9 +8,11 @@ import com.amazonaws.services.s3.AmazonS3ClientBuilder
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
 import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.ComponentScan
 import org.springframework.context.annotation.Configuration
 
 @SpringBootApplication
+@ComponentScan(basePackages = ["com.erfangc.sesamelab"])
 class SesameLabApplication
 
 fun main(args: Array<String>) {
@@ -20,7 +22,7 @@ fun main(args: Array<String>) {
 @Configuration
 class Configuration {
     @Bean
-    fun dynamoDB(): AmazonDynamoDB {
+    fun amazonDynamoDB(): AmazonDynamoDB {
         return AmazonDynamoDBClientBuilder.defaultClient()
     }
 
