@@ -15,7 +15,7 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 
 @Configuration
-@EnableWebSecurity(debug = true)
+@EnableWebSecurity
 public class WebSecurityConfiguration extends WebSecurityConfigurerAdapter {
 
     private String issuer = System.getenv("AUTH0_ISSUER");
