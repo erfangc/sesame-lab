@@ -3,6 +3,7 @@ package com.erfangc.sesamelab;
 import com.auth0.spring.security.api.JwtWebSecurityConfigurer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
@@ -39,7 +40,13 @@ public class WebSecurityConfiguration extends WebSecurityConfigurerAdapter {
                 .authorizeRequests()
                 .antMatchers("/")
                 .permitAll()
-                .antMatchers("/api/**")
+                .antMatchers(HttpMethod.OPTIONS, "/api/**")
+                .permitAll()
+                .antMatchers(HttpMethod.POST, "/api/**")
+                .authenticated()
+                .antMatchers(HttpMethod.GET, "/api/**")
+                .authenticated()
+                .antMatchers(HttpMethod.DELETE, "/api/**")
                 .authenticated();
     }
 
