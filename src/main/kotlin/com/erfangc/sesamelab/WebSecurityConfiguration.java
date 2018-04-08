@@ -20,13 +20,14 @@ public class WebSecurityConfiguration extends WebSecurityConfigurerAdapter {
 
     private String apiAudience = System.getenv("AUTH0_API_AUDIENCE");
     private String issuer = System.getenv("AUTH0_ISSUER");
+    private String allowedOrigins = System.getenv("ALLOWED_ORIGINS");
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedHeaders(singletonList("Authorization"));
-        configuration.setAllowedOrigins(singletonList("http://localhost:3000"));
-        configuration.setAllowedMethods(asList("GET", "POST", "OPTIONS"));
+        configuration.setAllowedOrigins(singletonList(allowedOrigins));
+        configuration.setAllowedMethods(asList("GET", "DELETE", "POST", "OPTIONS"));
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/api/**", configuration);
         return source;
