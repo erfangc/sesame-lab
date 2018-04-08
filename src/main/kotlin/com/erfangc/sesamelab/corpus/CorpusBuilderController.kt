@@ -30,8 +30,8 @@ class CorpusBuilderController(private val corpusBuilderService: CorpusBuilderSer
     }
 
     @GetMapping("by-creator")
-    fun getByCreator(@RequestParam creator: String, @PathVariable corpus: String): List<JsonNode>? {
-        return corpusBuilderService.getByCreator(creator, corpus)
+    fun getByCreator(@RequestParam(required = false) creator: String?, @PathVariable corpus: String, principal: Principal?): List<JsonNode>? {
+        return corpusBuilderService.getByCreator(creator ?: principal?.name ?: "anonymous", corpus)
     }
 
     @GetMapping("all")
