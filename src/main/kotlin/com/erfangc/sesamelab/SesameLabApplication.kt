@@ -21,14 +21,22 @@ fun main(args: Array<String>) {
 
 @Configuration
 class Configuration {
+    private val region = System.getenv("AWS_REGION")
+
     @Bean
     fun amazonDynamoDB(): AmazonDynamoDB {
-        return AmazonDynamoDBClientBuilder.defaultClient()
+        return AmazonDynamoDBClientBuilder
+                .standard()
+                .withRegion(region)
+                .build()
     }
 
     @Bean
     fun amazonS3(): AmazonS3 {
-        return AmazonS3ClientBuilder.defaultClient()
+        return AmazonS3ClientBuilder
+                .standard()
+                .withRegion(region)
+                .build()
     }
 
     @Bean
