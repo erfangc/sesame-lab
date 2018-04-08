@@ -5,10 +5,9 @@ import com.amazonaws.services.dynamodbv2.document.DynamoDB
 import com.amazonaws.services.dynamodbv2.document.PrimaryKey
 import com.amazonaws.services.dynamodbv2.document.spec.QuerySpec
 import com.amazonaws.services.dynamodbv2.model.AttributeValue
-import com.amazonaws.services.dynamodbv2.model.GetItemRequest
 import com.amazonaws.services.dynamodbv2.model.ReturnValue
 import com.amazonaws.services.dynamodbv2.model.UpdateItemRequest
-import com.fasterxml.jackson.databind.JsonNode
+import com.erfangc.sesamelab.user.User
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import org.slf4j.LoggerFactory
@@ -17,24 +16,25 @@ import java.lang.System.currentTimeMillis
 import java.util.*
 
 @Service
-class CorpusBuilderService(private val amazonDynamoDB: AmazonDynamoDB, private val dynamoDB: DynamoDB) {
+class CorpusBuilderService(private val amazonDynamoDB: AmazonDynamoDB,
+                           private val dynamoDB: DynamoDB,
+                           private val objectMapper: ObjectMapper) {
 
-    private val objectMapper = ObjectMapper()
-    private val tableName = "NamedEntities"
+    private val tableName = "TrainingDocuments"
     private val logger = LoggerFactory.getLogger(CorpusBuilderService::class.java)
 
     /**
      * retrieves an single document / sentence by ID
      */
-    fun getById(id: String): JsonNode {
+    fun getById(id: String): Document {
         val table = dynamoDB.getTable(tableName)
-        val item = table.getItem("Id", id)
+        val item = table.getItem("id", id)
         return objectMapper.readValue(item.toJSON())
     }
 
     fun delete(id: String) {
         val table = dynamoDB.getTable(tableName)
-        table.deleteItem(PrimaryKey("Id", id))
+        table.deleteItem(PrimaryKey("id", id))
     }
 
     /**
@@ -43,25 +43,31 @@ class CorpusBuilderService(private val amazonDynamoDB: AmazonDynamoDB, private v
      */
     fun put(id: String?,
             content: String,
-            user: String,
+            user: User,
             corpus: String
     ): String {
         val resolvedID = id ?: UUID.randomUUID().toString()
         val request = UpdateItemRequest()
                 .withTableName(tableName)
                 .withUpdateExpression(
-                        "SET Content = :content, " +
-                                "CreatedBy = if_not_exists(CreatedBy, :user), " +
-                                "CreatedOn = if_not_exists(CreatedOn,:now), " +
-                                "LastModifiedBy = :user, " +
-                                "LastModified = :now, " +
-                                "Corpus = :corpus"
+                        "SET content = :content, " +
+                                "corpus = :corpus, " +
+                                "createdOn = if_not_exists(createdOn,:now), " +
+                                "createdBy = if_not_exists(createdBy, :userID), " +
+                                "createdByNickname = if_not_exists(createdByNickname,:userNickname), " +
+                                "createdByEmail = if_not_exists(createdByEmail,:userEmail), " +
+                                "lastModifiedOn = :now, " +
+                                "lastModifiedBy = :userID, " +
+                                "lastModifiedByNickname = :userNickname, " +
+                                "lastModifiedByEmail = :userEmail "
                 )
-                .withKey(mapOf("Id" to AttributeValue().withS(resolvedID)))
+                .withKey(mapOf("id" to AttributeValue().withS(resolvedID)))
                 .withExpressionAttributeValues(
                         mapOf(
                                 ":content" to AttributeValue().withS(content),
-                                ":user" to AttributeValue().withS(user),
+                                ":userID" to AttributeValue().withS(user.id),
+                                ":userEmail" to AttributeValue().withS(user.email),
+                                ":userNickname" to AttributeValue().withS(user.nickname),
                                 ":now" to AttributeValue().withN("${currentTimeMillis()}"),
                                 ":corpus" to AttributeValue().withS(corpus)
                         )
@@ -75,28 +81,28 @@ class CorpusBuilderService(private val amazonDynamoDB: AmazonDynamoDB, private v
     /**
      * query all documents created by the given creator in this corpus
      */
-    fun getByCreator(creator: String, corpus: String): List<JsonNode>? {
+    fun getByCreator(creator: String, corpus: String): List<Document>? {
         val table = dynamoDB.getTable(tableName)
-        val index = table.getIndex("CreatedBy-index")
+        val index = table.getIndex("createdBy-index")
         val query = QuerySpec()
-                .withKeyConditionExpression("CreatedBy = :creator")
-                .withFilterExpression("Corpus = :corpus")
+                .withKeyConditionExpression("createdBy = :creator")
+                .withFilterExpression("corpus = :corpus")
                 .withValueMap(mapOf(":creator" to creator, ":corpus" to corpus))
         val queryResult = index.query(query)
-        return queryResult.map { objectMapper.readTree(it.toJSON()) }
+        return queryResult.map { objectMapper.readValue<Document>(it.toJSON()) }
     }
 
     /**
      * queries all documents in a given corpus modified after a certain date
      */
-    fun getModifiedAfter(modifiedAfter: Long, corpus: String): List<JsonNode> {
+    fun getModifiedAfter(modifiedAfter: Long, corpus: String): List<Document> {
         val table = dynamoDB.getTable(tableName)
-        val index = table.getIndex("Corpus-LastModified-index")
+        val index = table.getIndex("corpus-lastModifiedOn-index")
         val query = QuerySpec()
-                .withKeyConditionExpression("Corpus = :corpus AND LastModified >= :modifiedAfter")
+                .withKeyConditionExpression("corpus = :corpus AND lastModifiedOn >= :modifiedAfter")
                 .withValueMap(mapOf(":modifiedAfter" to modifiedAfter, ":corpus" to corpus))
         val queryResult = index.query(query)
-        return queryResult.map { objectMapper.readTree(it.toJSON()) }
+        return queryResult.map { objectMapper.readValue<Document>(it.toJSON()) }
     }
 
 }

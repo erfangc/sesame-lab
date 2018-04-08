@@ -5,16 +5,15 @@ import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder
 import com.amazonaws.services.dynamodbv2.document.DynamoDB
 import com.amazonaws.services.s3.AmazonS3
 import com.amazonaws.services.s3.AmazonS3ClientBuilder
+import com.auth0.client.auth.AuthAPI
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
 import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.ComponentScan
 import org.springframework.context.annotation.Configuration
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RestController
 
 @SpringBootApplication
-@ComponentScan(basePackages = ["com.erfangc.sesamelab"])
 class SesameLabApplication
 
 fun main(args: Array<String>) {
@@ -32,6 +31,9 @@ class HeartBeatController {
 @Configuration
 class Configuration {
     private val region = System.getenv("AWS_REGION")
+    private val issuer = System.getenv("AUTH0_ISSUER")
+    private val clientId = System.getenv("AUTH0_CLIENT_ID")
+    private val clientSecret = System.getenv("AUTH0_CLIENT_SECRET")
 
     @Bean
     fun amazonDynamoDB(): AmazonDynamoDB {
@@ -52,5 +54,10 @@ class Configuration {
     @Bean
     fun dynamoDB(amazonDynamoDB: AmazonDynamoDB): DynamoDB {
         return DynamoDB(amazonDynamoDB)
+    }
+
+    @Bean
+    fun authAPI(): AuthAPI {
+        return AuthAPI(issuer, clientId, clientSecret)
     }
 }

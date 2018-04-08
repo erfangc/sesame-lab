@@ -32,7 +32,7 @@ class NERService(private val corpusBuilderService: CorpusBuilderService, private
               modifiedAfter: Long
     ): String {
         val trainingJSONs = corpusBuilderService.getModifiedAfter(modifiedAfter = modifiedAfter, corpus = corpus)
-        val text = trainingJSONs.joinToString("\n") { it.get("Content").asText().replace("\n", "") }
+        val text = trainingJSONs.joinToString("\n") { it.content.replace("\n", "") }
         val lineStream = PlainTextByLineStream({ ByteArrayInputStream(text.toByteArray()) }, StandardCharsets.UTF_8)
         val sampleStream = NameSampleDataStream(lineStream)
         val model = NameFinderME.train(

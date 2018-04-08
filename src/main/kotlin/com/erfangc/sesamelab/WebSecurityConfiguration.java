@@ -18,8 +18,8 @@ import static java.util.Collections.singletonList;
 @EnableWebSecurity(debug = true)
 public class WebSecurityConfiguration extends WebSecurityConfigurerAdapter {
 
-    private String apiAudience = System.getenv("AUTH0_API_AUDIENCE");
     private String issuer = System.getenv("AUTH0_ISSUER");
+    private String apiAudience = System.getenv("AUTH0_API_AUDIENCE");
     private String allowedOrigins = System.getenv("ALLOWED_ORIGINS");
 
     @Bean
