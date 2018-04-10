@@ -1,6 +1,7 @@
 package com.erfangc.sesamelab.ner
 
 import opennlp.tools.util.Span
+import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.web.bind.annotation.*
 
 @RestController

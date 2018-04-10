@@ -27,6 +27,12 @@ class NERService(private val corpusBuilderService: CorpusBuilderService, private
         amazonS3.deleteObject(bucketName, "$modelName.bin")
     }
 
+    /**
+     * trains the model against the given corpus
+     * subject to the passed in constraints
+     *
+     * we store the output model to S3, furthermore we store some metadata about the model to be reused later
+     */
     fun train(corpus: String,
               modelName: String,
               modifiedAfter: Long
