@@ -65,6 +65,7 @@ class Configuration {
         configuration.jdbcUrl = "jdbc:mysql://${dbUri.host}${dbUri.path}"
         configuration.username = userInfo[0]
         configuration.password = userInfo[1]
+        configuration.maximumPoolSize = 2
         return HikariDataSource(configuration)
     }
 
