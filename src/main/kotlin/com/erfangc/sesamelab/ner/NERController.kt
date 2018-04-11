@@ -5,9 +5,16 @@ import opennlp.tools.util.Span
 import org.springframework.web.bind.annotation.*
 import java.security.Principal
 
+@CrossOrigin
 @RestController
 @RequestMapping("api/v1/ner")
 class NERController(private val trainingService: NERService, private val userService: UserService) {
+
+    @GetMapping("all-models")
+    fun allModels(): List<NERModel> {
+        return trainingService.allModels()
+    }
+
     @PostMapping("train")
     fun train(@RequestParam corpus: String,
               @RequestParam(required = false) modelName: String?,

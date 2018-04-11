@@ -18,7 +18,18 @@ import org.springframework.stereotype.Service
 import java.io.ByteArrayInputStream
 import java.io.File
 import java.nio.charset.StandardCharsets
+import java.time.LocalDateTime
 import java.util.*
+
+data class NERModel(
+        val modelID: String,
+        val modelName: String,
+        val modelDescription: String,
+        val createdBy: String,
+        val createdOn: LocalDateTime,
+        val createdByEmail: String,
+        val fileLocation: String
+)
 
 @Service
 class NERService(private val corpusBuilderService: CorpusBuilderService,
@@ -28,6 +39,24 @@ class NERService(private val corpusBuilderService: CorpusBuilderService,
     private val namedJdbcTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
     private val logger = LoggerFactory.getLogger(NERService::class.java)
     private val bucketName = "sesame-lab"
+
+    fun allModels(): List<NERModel> {
+        return namedJdbcTemplate
+                .query(
+                        "SELECT * FROM models",
+                        { resultSet, _ ->
+                            NERModel(
+                                    modelID = resultSet.getString("modelID"),
+                                    modelName = resultSet.getString("modelName"),
+                                    modelDescription = resultSet.getString("modelDescription"),
+                                    createdBy = resultSet.getString("createdBy"),
+                                    createdOn = resultSet.getTimestamp("createdOn").toLocalDateTime(),
+                                    createdByEmail = resultSet.getString("createdByEmail"),
+                                    fileLocation = resultSet.getString("createdByEmail")
+                            )
+                        }
+                )
+    }
 
     fun delete(modelID: String) {
         logger.info("Deleting model $modelID")
