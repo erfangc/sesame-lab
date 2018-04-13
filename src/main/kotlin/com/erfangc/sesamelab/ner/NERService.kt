@@ -28,7 +28,8 @@ data class NERModel(
         val createdBy: String,
         val createdOn: LocalDateTime,
         val createdByEmail: String,
-        val fileLocation: String
+        val fileLocation: String,
+        val corpus: String
 )
 
 @Service
@@ -52,7 +53,8 @@ class NERService(private val corpusBuilderService: CorpusBuilderService,
                                     createdBy = resultSet.getString("createdBy"),
                                     createdOn = resultSet.getTimestamp("createdOn").toLocalDateTime(),
                                     createdByEmail = resultSet.getString("createdByEmail"),
-                                    fileLocation = resultSet.getString("createdByEmail")
+                                    fileLocation = resultSet.getString("fileLocation"),
+                                    corpus = resultSet.getString("corpus")
                             )
                         }
                 )
@@ -101,6 +103,7 @@ class NERService(private val corpusBuilderService: CorpusBuilderService,
         logger.info("Writing model metadata into database")
         val parameters = mapOf(
                 "modelID" to modelID,
+                "corpus" to corpus,
                 "modelName" to modelName,
                 "modelDescription" to (modelDescription ?: "no description"),
                 "createdBy" to user.id,
@@ -109,8 +112,8 @@ class NERService(private val corpusBuilderService: CorpusBuilderService,
         )
         namedJdbcTemplate
                 .update(
-                        "INSERT INTO models (modelID, modelName, modelDescription, createdOn, createdBy, createdByEmail, fileLocation) " +
-                                "VALUES (:modelID, :modelName, :modelDescription, now(),  :createdBy, :createdByEmail, :fileLocation);",
+                        "INSERT INTO models (modelID, modelName, modelDescription, createdOn, createdBy, createdByEmail, fileLocation, corpus) " +
+                                "VALUES (:modelID, :modelName, :modelDescription, now(),  :createdBy, :createdByEmail, :fileLocation, :corpus);",
                         parameters
                 )
         logger.info("Wrote model metadata into database")
@@ -120,13 +123,15 @@ class NERService(private val corpusBuilderService: CorpusBuilderService,
     }
 
     fun run(modelID: String,
-            sentence: String): Array<out Span>? {
+            sentence: String): String {
         // TODO we need to cache the InputStream objects loaded from S3, and evict said cache via message broker since we may be running multiple instances of this server
         /*
         create the tokenizer - we need it to break up the incoming sentence
          */
         logger.info("Creating tokenizer for $modelID, sentence=$sentence")
         val tokenModelIS = amazonS3.getObject(bucketName, "en-token.bin").objectContent
+        logger.info("Loaded tokenizer model from S3")
+
         val tokenModel = TokenizerModel(tokenModelIS)
         val tokenizer = TokenizerME(tokenModel)
 
@@ -144,7 +149,32 @@ class NERService(private val corpusBuilderService: CorpusBuilderService,
         logger.info("Tokenized $sentence into ${tokens.map { it }}")
         val nameSpans = nameFinder.find(tokens)
         nameFinder.clearAdaptiveData()
-        return nameSpans
+        /*
+        build the NER tagged string based on name span
+         */
+        val stringBuilder = StringBuilder()
+        var entityNo = 0
+        var nextStart = if (nameSpans.isNotEmpty()) nameSpans[0].start else Int.MAX_VALUE
+        var nextEnd = if (nameSpans.isNotEmpty()) nameSpans[0].end else Int.MAX_VALUE
+        for (i in 0 until tokens.size) {
+            /*
+            if this token is the start of an entity, we append the tag
+             */
+            if (i == nextStart) {
+                stringBuilder.append("<START:${nameSpans[entityNo].type}>")
+            }
+            stringBuilder
+                    .append(" ")
+                    .append(tokens[i])
+            if (i == nextEnd - 1) {
+                stringBuilder.append(" <END>")
+                // update entityNo to the next name span
+                entityNo++
+                nextStart = if (entityNo >= nameSpans.size) Int.MAX_VALUE else nameSpans[entityNo].start
+                nextEnd = if (entityNo >= nameSpans.size) Int.MAX_VALUE else nameSpans[entityNo].end
+            }
+        }
+        return stringBuilder.toString()
     }
 
 }

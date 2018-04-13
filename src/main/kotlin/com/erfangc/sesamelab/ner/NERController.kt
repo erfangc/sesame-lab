@@ -1,7 +1,6 @@
 package com.erfangc.sesamelab.ner
 
 import com.erfangc.sesamelab.user.UserService
-import opennlp.tools.util.Span
 import org.springframework.web.bind.annotation.*
 import java.security.Principal
 
@@ -33,7 +32,7 @@ class NERController(private val trainingService: NERService, private val userSer
 
     @GetMapping("{modelID}/run")
     fun run(@PathVariable modelID: String,
-            @RequestParam sentence: String): Array<out Span>? {
+            @RequestParam sentence: String): String {
         return trainingService.run(modelID = modelID, sentence = sentence)
     }
 
