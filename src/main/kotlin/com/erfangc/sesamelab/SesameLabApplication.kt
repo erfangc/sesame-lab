@@ -8,6 +8,11 @@ import com.amazonaws.services.s3.AmazonS3ClientBuilder
 import com.auth0.client.auth.AuthAPI
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
+import org.apache.http.HttpHeaders
+import org.apache.http.HttpHost
+import org.apache.http.message.BasicHeader
+import org.elasticsearch.client.RestClient
+import org.elasticsearch.client.RestHighLevelClient
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
 import org.springframework.context.annotation.Bean
@@ -16,6 +21,7 @@ import org.springframework.context.annotation.Primary
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RestController
+import java.lang.Integer.parseInt
 import java.net.URI
 import javax.sql.DataSource
 
@@ -54,6 +60,24 @@ class Configuration {
     SQL database connection string is injected by Heroku at run time, for development we can use whatever
      */
     private val clearDBDatabaseURL = System.getenv("CLEARDB_DATABASE_URL")
+    /*
+    Elasticsearch environment variables
+     */
+    private val esAuthorization = System.getenv("ES_AUTHORIZATION")
+    private val esHost = System.getenv("ES_HOST")
+    private val esPort = System.getenv("ES_PORT")
+    private val esScheme = System.getenv("ES_SCHEME")
+
+    @Bean
+    fun restHighLevelClient(): RestHighLevelClient {
+        return RestHighLevelClient(
+                RestClient
+                        .builder(
+                                HttpHost(esHost, parseInt(esPort), esScheme)
+                        )
+                        .setDefaultHeaders(arrayOf(BasicHeader(HttpHeaders.AUTHORIZATION, esAuthorization)))
+        )
+    }
 
     @Bean
     @Primary

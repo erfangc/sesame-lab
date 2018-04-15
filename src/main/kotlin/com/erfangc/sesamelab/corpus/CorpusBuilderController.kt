@@ -14,7 +14,12 @@ class CorpusBuilderController(private val corpusBuilderService: CorpusBuilderSer
                               private val userService: UserService) {
 
     @DeleteMapping("{id}")
-    fun delete(@PathVariable id: String) {
+    fun delete(@PathVariable id: String, principal: Principal?) {
+        val user = userService.getUser(principal)
+        val document = corpusBuilderService.getById(id)
+        if (user.id != document.createdBy) {
+            throw RuntimeException("you are not allowed to delete document $id")
+        }
         corpusBuilderService.delete(id)
     }
 
