@@ -10,7 +10,7 @@ import org.elasticsearch.search.aggregations.support.ValueType
 import org.elasticsearch.search.builder.SearchSourceBuilder
 import org.springframework.stereotype.Service
 
-data class Dashboard(val topUsers: Map<String, Long>, val topCorpus: Map<String, Long>)
+data class Dashboard(val topUsers: Map<String, Long>, val topCorpus: Map<String, Long>, val topEntityValue: Map<String, Long>)
 
 @Service
 class SearchService(private val restHighLevelClient: RestHighLevelClient) {
@@ -20,6 +20,8 @@ class SearchService(private val restHighLevelClient: RestHighLevelClient) {
     private val corpus = "corpus"
     private val corpusField = "corpus.keyword"
     private val contributorsField = "createdByEmail.keyword"
+    private val entityValueField = "entities.value.keyword"
+    private val entityValue = "entities.value"
 
     fun dashboard(user: User): Dashboard {
         // display top level stats
@@ -34,18 +36,28 @@ class SearchService(private val restHighLevelClient: RestHighLevelClient) {
                 .size(10)
                 .minDocCount(1)
 
+        val aggregationByEntityValue = TermsAggregationBuilder(entityValue, ValueType.STRING)
+                .field(entityValueField)
+                .order(Terms.Order.count(false))
+                .size(50)
+                .minDocCount(1)
+
         val request = SearchRequest(index)
                 .source(
                         SearchSourceBuilder()
                                 .aggregation(aggregationByContributor)
                                 .aggregation(aggregationByCorpus)
+                                .aggregation(aggregationByEntityValue)
                 )
         val response = restHighLevelClient.search(request)
         val aggByContributors: ParsedStringTerms = response.aggregations[contributors]
         val aggByCorpus: ParsedStringTerms = response.aggregations[corpus]
+        val aggByEntityValue: ParsedStringTerms = response.aggregations[entityValue]
+
         return Dashboard(
                 topCorpus = aggByCorpus.buckets.map { it.key.toString() to it.docCount }.toMap(),
-                topUsers = aggByContributors.buckets.map { it.key.toString() to it.docCount }.toMap()
+                topUsers = aggByContributors.buckets.map { it.key.toString() to it.docCount }.toMap(),
+                topEntityValue = aggByEntityValue.buckets.map { it.key.toString() to it.docCount }.toMap()
         )
     }
 }
