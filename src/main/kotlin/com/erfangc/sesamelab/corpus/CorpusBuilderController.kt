@@ -1,11 +1,8 @@
 package com.erfangc.sesamelab.corpus
 
 import com.erfangc.sesamelab.user.UserService
-import com.fasterxml.jackson.databind.JsonNode
 import org.springframework.web.bind.annotation.*
 import java.security.Principal
-
-data class Content(val body: String)
 
 @RestController
 @CrossOrigin
@@ -29,11 +26,19 @@ class CorpusBuilderController(private val corpusBuilderService: CorpusBuilderSer
     }
 
     @PostMapping
-    fun put(@RequestBody content: Content,
-            @PathVariable corpus: String,
-            @RequestParam id: String?,
-            principal: Principal?): String {
-        return corpusBuilderService.put(id = id, content = content.body, user = userService.getUser(principal), corpus = corpus)
+    fun put(@RequestBody document: Document,
+            principal: Principal?): Document {
+        /*
+        important that we override modified author fields
+        based on authenticated principal and not user input
+         */
+        val user = userService.getUser(principal)
+        return corpusBuilderService
+                .put(document.copy(
+                        lastModifiedBy = user.id,
+                        lastModifiedByEmail = user.email,
+                        lastModifiedByNickname = user.nickname)
+                )
     }
 
     @GetMapping("by-creator")
