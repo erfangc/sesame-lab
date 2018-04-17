@@ -12,7 +12,7 @@ class CorpusBuilderController(private val corpusBuilderService: CorpusBuilderSer
 
     @DeleteMapping("{id}")
     fun delete(@PathVariable id: String, principal: Principal?) {
-        val user = userService.getUser(principal)
+        val user = userService.getUserFromAuthenticatedPrincipal(principal)
         val document = corpusBuilderService.getById(id)
         if (user.id != document.createdBy) {
             throw RuntimeException("you are not allowed to delete document $id")
@@ -32,7 +32,7 @@ class CorpusBuilderController(private val corpusBuilderService: CorpusBuilderSer
         important that we override modified author fields
         based on authenticated principal and not user input
          */
-        val user = userService.getUser(principal)
+        val user = userService.getUserFromAuthenticatedPrincipal(principal)
         return corpusBuilderService
                 .put(document.copy(
                         lastModifiedBy = user.id,

@@ -9,7 +9,6 @@ import opennlp.tools.namefind.TokenNameFinderModel
 import opennlp.tools.tokenize.TokenizerME
 import opennlp.tools.tokenize.TokenizerModel
 import opennlp.tools.util.PlainTextByLineStream
-import opennlp.tools.util.Span
 import opennlp.tools.util.TrainingParameters
 import org.slf4j.LoggerFactory
 import org.springframework.jdbc.core.JdbcTemplate
@@ -22,14 +21,13 @@ import java.time.LocalDateTime
 import java.util.*
 
 data class NERModel(
-        val modelID: String,
-        val modelName: String,
-        val modelDescription: String,
-        val createdBy: String,
+        val id: String,
+        val name: String,
+        val description: String,
+        val userID: String,
         val createdOn: LocalDateTime,
-        val createdByEmail: String,
         val fileLocation: String,
-        val corpus: String
+        val corpusID: String
 )
 
 @Service
@@ -47,24 +45,23 @@ class NERService(private val corpusBuilderService: CorpusBuilderService,
                         "SELECT * FROM models",
                         { resultSet, _ ->
                             NERModel(
-                                    modelID = resultSet.getString("modelID"),
-                                    modelName = resultSet.getString("modelName"),
-                                    modelDescription = resultSet.getString("modelDescription"),
-                                    createdBy = resultSet.getString("createdBy"),
-                                    createdOn = resultSet.getTimestamp("createdOn").toLocalDateTime(),
-                                    createdByEmail = resultSet.getString("createdByEmail"),
-                                    fileLocation = resultSet.getString("fileLocation"),
-                                    corpus = resultSet.getString("corpus")
+                                    id = resultSet.getString("id"),
+                                    name = resultSet.getString("name"),
+                                    description = resultSet.getString("description"),
+                                    userID = resultSet.getString("user_id"),
+                                    createdOn = resultSet.getTimestamp("created_on").toLocalDateTime(),
+                                    fileLocation = resultSet.getString("file_location"),
+                                    corpusID = resultSet.getString("corpus_id")
                             )
                         }
                 )
     }
 
-    fun delete(modelID: String) {
-        logger.info("Deleting model $modelID")
-        namedJdbcTemplate.update("DELETE FROM models WHERE modelID = :modelID", mapOf("modelID" to modelID))
-        amazonS3.deleteObject(bucketName, "$modelID.bin")
-        logger.info("Deleted model $modelID")
+    fun delete(id: String) {
+        logger.info("Deleting model $id")
+        namedJdbcTemplate.update("DELETE FROM models WHERE id = :id", mapOf("id" to id))
+        amazonS3.deleteObject(bucketName, "$id.bin")
+        logger.info("Deleted model $id")
     }
 
     /**
@@ -78,11 +75,11 @@ class NERService(private val corpusBuilderService: CorpusBuilderService,
         /*
         preparing parameters / local variables
          */
-        val modelID = UUID.randomUUID().toString()
-        val modelName = request.modelName
+        val id = UUID.randomUUID().toString()
+        val name = request.name
         val modifiedAfter = request.modifiedAfter
-        val corpus = request.corpus
-        val modelDescription = request.modelDescription
+        val corpus = request.corpusID
+        val description = request.description
         val user = request.user
 
         val trainingJSONs = corpusBuilderService.getModifiedAfter(modifiedAfter = modifiedAfter, corpus = corpus)
@@ -96,35 +93,31 @@ class NERService(private val corpusBuilderService: CorpusBuilderService,
                 TrainingParameters.defaultParams(),
                 TokenNameFinderFactory()
         )
-        val modelOutFile = File.createTempFile(modelID, ".bin")
+        val modelOutFile = File.createTempFile(id, ".bin")
         model.serialize(modelOutFile)
-        amazonS3.putObject(bucketName, "$modelID.bin", modelOutFile)
-
-        logger.info("Writing model metadata into database")
+        amazonS3.putObject(bucketName, "$id.bin", modelOutFile)
         val parameters = mapOf(
-                "modelID" to modelID,
-                "corpus" to corpus,
-                "modelName" to modelName,
-                "modelDescription" to (modelDescription ?: "no description"),
-                "createdBy" to user.id,
-                "createdByEmail" to user.email,
-                "fileLocation" to "https://s3.amazonaws.com/sesame-lab/$modelID.bin"
+                "id" to id,
+                "corpus_id" to corpus,
+                "name" to name,
+                "description" to (description ?: "No Description"),
+                "user_id" to user.id,
+                "file_location" to "https://s3.amazonaws.com/sesame-lab/$id.bin"
         )
+        logger.info("Writing model metadata into database with parameters $parameters")
         namedJdbcTemplate
                 .update(
-                        "INSERT INTO models (modelID, modelName, modelDescription, createdOn, createdBy, createdByEmail, fileLocation, corpus) " +
-                                "VALUES (:modelID, :modelName, :modelDescription, now(),  :createdBy, :createdByEmail, :fileLocation, :corpus);",
+                        "INSERT INTO models (id, name, description, created_on, file_location, corpus_id, user_id) " +
+                                "VALUES (:id, :name, :description, now(), :file_location, :corpus_id, :user_id);",
                         parameters
                 )
         logger.info("Wrote model metadata into database")
-
         modelOutFile.delete()
-        return modelID
+        return id
     }
 
     fun run(modelID: String,
             sentence: String): String {
-        // TODO we need to cache the InputStream objects loaded from S3, and evict said cache via message broker since we may be running multiple instances of this server
         /*
         create the tokenizer - we need it to break up the incoming sentence
          */

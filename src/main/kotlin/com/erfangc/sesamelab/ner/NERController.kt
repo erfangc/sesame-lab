@@ -1,8 +1,11 @@
 package com.erfangc.sesamelab.ner
 
+import com.erfangc.sesamelab.user.User
 import com.erfangc.sesamelab.user.UserService
 import org.springframework.web.bind.annotation.*
 import java.security.Principal
+
+data class NERModelWithCreatorInfo(val model: NERModel, val user: User?)
 
 @CrossOrigin
 @RestController
@@ -10,22 +13,25 @@ import java.security.Principal
 class NERController(private val trainingService: NERService, private val userService: UserService) {
 
     @GetMapping("all-models")
-    fun allModels(): List<NERModel> {
-        return trainingService.allModels()
+    fun allModels(): List<NERModelWithCreatorInfo> {
+        val allModels = trainingService.allModels()
+        val subs = allModels.map { it.userID }
+        val userByID = userService.getUsers(subs).associateBy { it.id }
+        return allModels.map { NERModelWithCreatorInfo(model = it, user = userByID[it.userID]) }
     }
 
     @PostMapping("train")
-    fun train(@RequestParam corpus: String,
-              @RequestParam(required = false) modelName: String?,
-              @RequestParam(required = false) modelDescription: String?,
+    fun train(@RequestParam corpusID: String,
+              @RequestParam(required = false) name: String?,
+              @RequestParam(required = false) description: String?,
               @RequestParam(required = false) modifiedAfter: Long?, principal: Principal?): String {
-        val user = userService.getUser(principal)
+        val user = userService.getUserFromAuthenticatedPrincipal(principal)
         val request = TrainModelRequest(
-                corpus = corpus,
+                corpusID = corpusID,
                 modifiedAfter = modifiedAfter ?: 0L,
-                modelName = modelName ?: "default",
+                name = name ?: "default",
                 user = user,
-                modelDescription = modelDescription
+                description = description
         )
         return trainingService.train(request)
     }
@@ -38,6 +44,6 @@ class NERController(private val trainingService: NERService, private val userSer
 
     @DeleteMapping("{modelID}")
     fun delete(@PathVariable modelID: String) {
-        return trainingService.delete(modelID = modelID)
+        return trainingService.delete(id = modelID)
     }
 }

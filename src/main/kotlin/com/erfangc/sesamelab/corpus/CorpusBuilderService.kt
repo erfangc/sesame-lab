@@ -6,7 +6,6 @@ import com.amazonaws.services.dynamodbv2.document.PrimaryKey
 import com.amazonaws.services.dynamodbv2.document.spec.QuerySpec
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
-import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.util.*
 
@@ -15,7 +14,6 @@ class CorpusBuilderService(private val dynamoDB: DynamoDB,
                            private val objectMapper: ObjectMapper) {
 
     private val tableName = "TrainingDocuments"
-    private val logger = LoggerFactory.getLogger(CorpusBuilderService::class.java)
 
     /**
      * retrieves an single document / sentence by ID

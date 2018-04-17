@@ -13,6 +13,6 @@ import java.security.Principal
 class DashboardController(private val searchService: SearchService, private val userService: UserService) {
     @GetMapping
     fun dashboard(principal: Principal?): Dashboard {
-        return searchService.dashboard(userService.getUser(principal))
+        return searchService.dashboard(userService.getUserFromAuthenticatedPrincipal(principal))
     }
 }
