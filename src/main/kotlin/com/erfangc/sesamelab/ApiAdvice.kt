@@ -12,6 +12,7 @@ data class ApiError(val timestamp: LocalDateTime, val message: String, val debug
 class ApiAdvice {
     @ExceptionHandler(RuntimeException::class)
     fun handleException(ex: RuntimeException): ResponseEntity<ApiError> {
+        ex.printStackTrace()
         return ResponseEntity(
                 ApiError(timestamp = LocalDateTime.now(), message = "A server side error has occured", debug = null),
                 HttpStatus.INTERNAL_SERVER_ERROR
