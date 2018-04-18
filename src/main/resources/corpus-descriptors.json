@@ -1,6 +1,7 @@
 [
   {
     "id": "test",
+    "userID": "test",
     "title": "Test Corpus",
     "entityConfigs": {
       "firm": {

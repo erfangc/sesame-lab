@@ -65,7 +65,7 @@ CREATE TABLE IF NOT EXISTS `models` (
     FOREIGN KEY (`corpus_id`)
     REFERENCES `corpus` (`id`)
     ON DELETE NO ACTION
-    ON UPDATE NO ACTION)
+  )
 ENGINE = InnoDB;
 
 

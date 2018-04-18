@@ -1,0 +1,40 @@
+{
+  "mappings": {
+    "_doc": {
+      "properties":{
+        "id": {
+          "type": "keyword"
+        },
+        "content": {
+          "type": "text"
+        },
+        "corpus": {
+          "type": "keyword"
+        },
+        "createdBy": {
+          "type": "keyword"
+        },
+        "createdByEmail": {
+          "type": "keyword"
+        },
+        "createdByNickname": {
+          "type": "keyword"
+        },
+        "createdOn": {
+          "type": "date"
+        },
+        "entities": {
+          "type": "nested",
+          "properties": {
+            "type": {"type":"keyword"},
+            "value": {"type":"keyword"}
+          }
+        },
+        "lastModifiedBy": {"type":"keyword"},
+        "lastModifiedByEmail": {"type":"keyword"},
+        "lastModifiedByNickname": {"type":"keyword"},
+        "lastModifiedOn": {"type":"date"}
+      }
+    }
+  }
+}
