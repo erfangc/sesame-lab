@@ -1,4 +1,4 @@
-package com.erfangc.sesamelab.corpus
+package com.erfangc.sesamelab.document
 
 data class Document(
         val id: String?,

@@ -1,4 +1,4 @@
-package com.erfangc.sesamelab.corpus
+package com.erfangc.sesamelab.document
 
 import com.amazonaws.services.dynamodbv2.document.DynamoDB
 import com.amazonaws.services.dynamodbv2.document.Item
@@ -10,8 +10,8 @@ import org.springframework.stereotype.Service
 import java.util.*
 
 @Service
-class CorpusBuilderService(private val dynamoDB: DynamoDB,
-                           private val objectMapper: ObjectMapper) {
+class DocumentService(private val dynamoDB: DynamoDB,
+                      private val objectMapper: ObjectMapper) {
 
     private val tableName = "TrainingDocuments"
 

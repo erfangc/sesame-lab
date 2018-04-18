@@ -1,7 +1,7 @@
 package com.erfangc.sesamelab.ner
 
 import com.amazonaws.services.s3.AmazonS3
-import com.erfangc.sesamelab.corpus.CorpusBuilderService
+import com.erfangc.sesamelab.document.DocumentService
 import opennlp.tools.namefind.NameFinderME
 import opennlp.tools.namefind.NameSampleDataStream
 import opennlp.tools.namefind.TokenNameFinderFactory
@@ -31,7 +31,7 @@ data class NERModel(
 )
 
 @Service
-class NERService(private val corpusBuilderService: CorpusBuilderService,
+class NERService(private val documentService: DocumentService,
                  private val amazonS3: AmazonS3,
                  jdbcTemplate: JdbcTemplate) {
 
@@ -82,7 +82,7 @@ class NERService(private val corpusBuilderService: CorpusBuilderService,
         val description = request.description
         val user = request.user
 
-        val trainingJSONs = corpusBuilderService.getModifiedAfter(modifiedAfter = modifiedAfter, corpus = corpus)
+        val trainingJSONs = documentService.getModifiedAfter(modifiedAfter = modifiedAfter, corpus = corpus)
         val text = trainingJSONs.joinToString("\n") { it.content.replace("\n", "") }
         val lineStream = PlainTextByLineStream({ ByteArrayInputStream(text.toByteArray()) }, StandardCharsets.UTF_8)
         val sampleStream = NameSampleDataStream(lineStream)

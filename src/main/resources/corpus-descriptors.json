@@ -4,16 +4,25 @@
     "title": "Test Corpus",
     "entityConfigs": {
       "firm": {
+        "id": "1",
+        "corpusID": "test",
+        "type": "firm",
         "color": "#E27D60",
         "textColor": "#333",
         "displayName": "Management Firm"
       },
       "family": {
+        "id": "2",
+        "corpusID": "test",
+        "type": "family",
         "color": "#659DBD",
         "textColor": "#f4f4f4",
         "displayName": "Fund Family"
       },
       "unknown": {
+        "id": "3",
+        "corpusID": "test",
+        "type": "unknown",
         "color": "#666",
         "textColor": "#fff",
         "displayName": "Unknown"
