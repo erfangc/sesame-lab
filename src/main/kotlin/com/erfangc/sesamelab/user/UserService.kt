@@ -38,31 +38,7 @@ class UserService(private val authAPI: AuthAPI) {
             we would fail to receive a user object if the subject was a machine
              */
             logger.error(e.message)
-            emptyList<User>()
-        }
-    }
-
-    /**
-     * this method uses the ManagementAPI to search a user by ID
-     * this is not the same as obtaining the currently authenticated principal from an accessToken
-     */
-    fun getUserByID(sub: String): User? {
-        /*
-        TODO consider perhaps not requesting a new token per request, but check expiration before each request
-         */
-        val managementAudience = audience
-        val tokenHolder = authAPI.requestToken(managementAudience).execute()
-        val users = ManagementAPI(issuer, tokenHolder.accessToken).users()
-        val userFilter = UserFilter().withFields("id,nickname,email", true)
-        try {
-            val user = users.get(sub, userFilter).execute()
-            return User(id = user.id, nickname = user.nickname, email = user.email)
-        } catch (e: Exception) {
-            /*
-            we would fail to receive a user object if the subject was a machine
-             */
-            logger.error(e.message)
-            return null
+            emptyList()
         }
     }
 
