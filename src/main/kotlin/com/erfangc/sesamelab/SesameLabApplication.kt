@@ -6,7 +6,6 @@ import com.amazonaws.services.dynamodbv2.document.DynamoDB
 import com.amazonaws.services.s3.AmazonS3
 import com.amazonaws.services.s3.AmazonS3ClientBuilder
 import com.auth0.client.auth.AuthAPI
-import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
 import org.apache.http.HttpHeaders
 import org.apache.http.HttpHost
@@ -17,8 +16,6 @@ import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import org.springframework.context.annotation.Primary
-import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RestController
 import java.lang.Integer.parseInt
@@ -57,10 +54,6 @@ class Configuration {
     private val clientId = System.getenv("AUTH0_CLIENT_ID")
     private val clientSecret = System.getenv("AUTH0_CLIENT_SECRET")
     /*
-    SQL database connection string is injected by Heroku at run time, for development we can use whatever
-     */
-    private val clearDBDatabaseURL = System.getenv("CLEARDB_DATABASE_URL")
-    /*
     Elasticsearch environment variables
      */
     private val esAuthorization = System.getenv("ES_AUTHORIZATION")
@@ -80,20 +73,6 @@ class Configuration {
     }
 
     @Bean
-    @Primary
-    fun dataSource(): DataSource {
-        // TODO add SSL to ensure secure connection to MySQL, but we are not storing anything interesting for now
-        val dbUri = URI(clearDBDatabaseURL)
-        val userInfo = dbUri.userInfo.split(":")
-        val configuration = HikariConfig()
-        configuration.jdbcUrl = "jdbc:mysql://${dbUri.host}${dbUri.path}"
-        configuration.username = userInfo[0]
-        configuration.password = userInfo[1]
-        configuration.maximumPoolSize = 2
-        return HikariDataSource(configuration)
-    }
-
-    @Bean
     fun amazonDynamoDB(): AmazonDynamoDB {
         return AmazonDynamoDBClientBuilder
                 .standard()
@@ -110,6 +89,20 @@ class Configuration {
     }
 
     @Bean
+    fun dataSource(): DataSource {
+        val dbUri = URI(System.getenv("DATABASE_URL"))
+        val username = dbUri.userInfo.split(":".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()[0]
+        val password = dbUri.userInfo.split(":".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()[1]
+        val jdbcUrl = "jdbc:postgresql://" + dbUri.host + ':'.toString() + dbUri.port + dbUri.path + "?sslmode=require"
+        val dataSource = HikariDataSource()
+        dataSource.username = username
+        dataSource.jdbcUrl = jdbcUrl
+        dataSource.password = password
+        dataSource.driverClassName = "org.postgresql.Driver"
+        return dataSource
+    }
+
+    @Bean
     fun dynamoDB(amazonDynamoDB: AmazonDynamoDB): DynamoDB {
         return DynamoDB(amazonDynamoDB)
     }
@@ -119,8 +112,4 @@ class Configuration {
         return AuthAPI(issuer, clientId, clientSecret)
     }
 
-    @Bean
-    fun jdbcTemplate(dataSource: DataSource): JdbcTemplate {
-        return JdbcTemplate(dataSource)
-    }
 }

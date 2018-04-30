@@ -1,5 +1,7 @@
-package com.erfangc.sesamelab.ner
+package com.erfangc.sesamelab.model
 
+import com.erfangc.sesamelab.model.entities.NERModel
+import com.erfangc.sesamelab.model.repositories.NERModelRepository
 import com.erfangc.sesamelab.user.User
 import com.erfangc.sesamelab.user.UserService
 import org.springframework.web.bind.annotation.*
@@ -10,11 +12,13 @@ data class NERModelWithCreatorInfo(val model: NERModel, val user: User?)
 @CrossOrigin
 @RestController
 @RequestMapping("api/v1/ner")
-class NERController(private val trainingService: NERService, private val userService: UserService) {
+class ModelController(private val trainingService: NERModelService,
+                      private val userService: UserService,
+                      private val nerModelRepository: NERModelRepository) {
 
     @GetMapping("all-models")
     fun allModels(): List<NERModelWithCreatorInfo> {
-        val allModels = trainingService.allModels()
+        val allModels = nerModelRepository.findAll()
         val subs = allModels.map { it.userID }
         val userByID = userService.getUsers(subs).associateBy { it.id }
         return allModels.map { NERModelWithCreatorInfo(model = it, user = userByID[it.userID]) }
@@ -26,7 +30,7 @@ class NERController(private val trainingService: NERService, private val userSer
               @RequestParam(required = false) description: String?,
               @RequestParam(required = false) modifiedAfter: Long?, principal: Principal?): String {
         val user = userService.getUserFromAuthenticatedPrincipal(principal)
-        val request = TrainModelRequest(
+        val request = TrainNERModelRequest(
                 corpusID = corpusID,
                 modifiedAfter = modifiedAfter ?: 0L,
                 name = name ?: "default",
@@ -43,7 +47,7 @@ class NERController(private val trainingService: NERService, private val userSer
     }
 
     @DeleteMapping("{modelID}")
-    fun delete(@PathVariable modelID: String) {
+    fun delete(@PathVariable modelID: Long) {
         return trainingService.delete(id = modelID)
     }
 }

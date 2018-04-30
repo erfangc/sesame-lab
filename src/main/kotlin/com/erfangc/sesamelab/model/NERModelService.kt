@@ -1,7 +1,9 @@
-package com.erfangc.sesamelab.ner
+package com.erfangc.sesamelab.model
 
 import com.amazonaws.services.s3.AmazonS3
 import com.erfangc.sesamelab.document.DocumentService
+import com.erfangc.sesamelab.model.entities.NERModel
+import com.erfangc.sesamelab.model.repositories.NERModelRepository
 import opennlp.tools.namefind.NameFinderME
 import opennlp.tools.namefind.NameSampleDataStream
 import opennlp.tools.namefind.TokenNameFinderFactory
@@ -11,55 +13,24 @@ import opennlp.tools.tokenize.TokenizerModel
 import opennlp.tools.util.PlainTextByLineStream
 import opennlp.tools.util.TrainingParameters
 import org.slf4j.LoggerFactory
-import org.springframework.jdbc.core.JdbcTemplate
-import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate
 import org.springframework.stereotype.Service
 import java.io.ByteArrayInputStream
 import java.io.File
 import java.nio.charset.StandardCharsets
 import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 import java.util.*
 
-data class NERModel(
-        val id: String,
-        val name: String,
-        val description: String,
-        val userID: String,
-        val createdOn: LocalDateTime,
-        val fileLocation: String,
-        val corpusID: String
-)
-
 @Service
-class NERService(private val documentService: DocumentService,
-                 private val amazonS3: AmazonS3,
-                 jdbcTemplate: JdbcTemplate) {
-
-    private val namedJdbcTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
-    private val logger = LoggerFactory.getLogger(NERService::class.java)
+class NERModelService(private val documentService: DocumentService,
+                      private val amazonS3: AmazonS3,
+                      private val nerModelRepository: NERModelRepository) {
+    private val logger = LoggerFactory.getLogger(NERModelService::class.java)
     private val bucketName = "sesame-lab"
 
-    fun allModels(): List<NERModel> {
-        return namedJdbcTemplate
-                .query(
-                        "SELECT * FROM models",
-                        { resultSet, _ ->
-                            NERModel(
-                                    id = resultSet.getString("id"),
-                                    name = resultSet.getString("name"),
-                                    description = resultSet.getString("description"),
-                                    userID = resultSet.getString("user_id"),
-                                    createdOn = resultSet.getTimestamp("created_on").toLocalDateTime(),
-                                    fileLocation = resultSet.getString("file_location"),
-                                    corpusID = resultSet.getString("corpus_id")
-                            )
-                        }
-                )
-    }
-
-    fun delete(id: String) {
+    fun delete(id: Long) {
         logger.info("Deleting model $id")
-        namedJdbcTemplate.update("DELETE FROM models WHERE id = :id", mapOf("id" to id))
+        nerModelRepository.deleteById(id)
         amazonS3.deleteObject(bucketName, "$id.bin")
         logger.info("Deleted model $id")
     }
@@ -71,18 +42,15 @@ class NERService(private val documentService: DocumentService,
      * we store the output model to S3, furthermore we store some metadata about the model to be reused later in
      * a SQL database
      */
-    fun train(request: TrainModelRequest): String {
+    fun train(requestNER: TrainNERModelRequest): String {
         /*
         preparing parameters / local variables
          */
         val id = UUID.randomUUID().toString()
-        val name = request.name
-        val modifiedAfter = request.modifiedAfter
-        val corpus = request.corpusID
-        val description = request.description
-        val user = request.user
+        val modifiedAfter = requestNER.modifiedAfter
+        val user = requestNER.user
 
-        val trainingJSONs = documentService.getModifiedAfter(modifiedAfter = modifiedAfter, corpus = corpus)
+        val trainingJSONs = documentService.getModifiedAfter(modifiedAfter = modifiedAfter, corpus = requestNER.corpusID)
         val text = trainingJSONs.joinToString("\n") { it.content.replace("\n", "") }
         val lineStream = PlainTextByLineStream({ ByteArrayInputStream(text.toByteArray()) }, StandardCharsets.UTF_8)
         val sampleStream = NameSampleDataStream(lineStream)
@@ -96,20 +64,14 @@ class NERService(private val documentService: DocumentService,
         val modelOutFile = File.createTempFile(id, ".bin")
         model.serialize(modelOutFile)
         amazonS3.putObject(bucketName, "$id.bin", modelOutFile)
-        val parameters = mapOf(
-                "id" to id,
-                "corpus_id" to corpus,
-                "name" to name,
-                "description" to (description ?: "No Description"),
-                "user_id" to user.id,
-                "file_location" to "https://s3.amazonaws.com/sesame-lab/$id.bin"
-        )
-        logger.info("Writing model metadata into database with parameters $parameters")
-        namedJdbcTemplate
-                .update(
-                        "INSERT INTO models (id, name, description, created_on, file_location, corpus_id, user_id) " +
-                                "VALUES (:id, :name, :description, now(), :file_location, :corpus_id, :user_id);",
-                        parameters
+        nerModelRepository
+                .save(
+                        NERModel()
+                                .setCreatedOn(LocalDateTime.now().format(DateTimeFormatter.ISO_DATE_TIME))
+                                .setName(requestNER.name)
+                                .setUserID(user.id)
+                                .setFileLocation("s3://$bucketName/$id.bin")
+                                .setDescription(requestNER.description)
                 )
         logger.info("Wrote model metadata into database")
         modelOutFile.delete()
