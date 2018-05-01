@@ -20,18 +20,6 @@ public class WebSecurityConfiguration extends WebSecurityConfigurerAdapter {
 
     private String issuer = System.getenv("AUTH0_ISSUER");
     private String apiAudience = System.getenv("AUTH0_API_AUDIENCE");
-    private String allowedOrigins = System.getenv("ALLOWED_ORIGINS");
-
-    @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedHeaders(singletonList("Authorization"));
-        configuration.setAllowedOrigins(singletonList(allowedOrigins));
-        configuration.setAllowedMethods(asList("GET", "DELETE", "POST", "OPTIONS"));
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/api/**", configuration);
-        return source;
-    }
 
     @Override
     protected void configure(HttpSecurity http) throws Exception {
@@ -40,6 +28,8 @@ public class WebSecurityConfiguration extends WebSecurityConfigurerAdapter {
                 .configure(http)
                 .authorizeRequests()
                 .antMatchers("/")
+                .permitAll()
+                .antMatchers(HttpMethod.OPTIONS, "/**")
                 .permitAll()
                 .antMatchers(HttpMethod.OPTIONS, "/api/**")
                 .permitAll()
