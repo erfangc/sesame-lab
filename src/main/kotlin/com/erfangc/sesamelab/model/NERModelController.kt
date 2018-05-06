@@ -25,7 +25,7 @@ class ModelController(private val trainingService: NERModelService,
     }
 
     @PostMapping("train")
-    fun train(@RequestParam corpusID: String,
+    fun train(@RequestParam corpusID: Long,
               @RequestParam(required = false) name: String?,
               @RequestParam(required = false) description: String?,
               @RequestParam(required = false) modifiedAfter: Long?, principal: Principal?): String {

@@ -3,6 +3,7 @@ package com.erfangc.sesamelab.model
 import com.amazonaws.services.s3.AmazonS3
 import com.erfangc.sesamelab.document.Document
 import com.erfangc.sesamelab.document.DynamoDBDocumentService
+import com.erfangc.sesamelab.document.ElasticsearchDocumentService
 import com.erfangc.sesamelab.model.entities.NERModel
 import com.erfangc.sesamelab.model.repositories.NERModelRepository
 import opennlp.tools.namefind.NameFinderME
@@ -18,13 +19,14 @@ import org.springframework.stereotype.Service
 import java.io.ByteArrayInputStream
 import java.io.File
 import java.nio.charset.StandardCharsets
+import java.time.Instant
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.*
 
 @Service
-class NERModelService(private val dynamoDBDocumentService: DynamoDBDocumentService,
-                      private val amazonS3: AmazonS3,
+class NERModelService(private val amazonS3: AmazonS3,
+                      private val elasticsearchDocumentService: ElasticsearchDocumentService,
                       private val nerModelRepository: NERModelRepository) {
     private val logger = LoggerFactory.getLogger(NERModelService::class.java)
     private val bucketName = "sesame-lab"
@@ -51,7 +53,8 @@ class NERModelService(private val dynamoDBDocumentService: DynamoDBDocumentServi
         val modifiedAfter = requestNER.modifiedAfter
         val user = requestNER.user
 
-        val trainingJSONs = emptyList<Document>()
+        val trainingJSONs = elasticsearchDocumentService
+                .searchByCorpusID(corpusID = requestNER.corpusID, modifiedAfter = Instant.ofEpochMilli(modifiedAfter))
         val text = trainingJSONs.joinToString("\n") { it.content.replace("\n", "") }
         val lineStream = PlainTextByLineStream({ ByteArrayInputStream(text.toByteArray()) }, StandardCharsets.UTF_8)
         val sampleStream = NameSampleDataStream(lineStream)
