@@ -11,10 +11,11 @@ class DocumentController(private val dynamoDBDocumentService: DynamoDBDocumentSe
                          private val elasticsearchDocumentService: ElasticsearchDocumentService,
                          private val userService: UserService) {
 
-    @GetMapping("by-creator/{creatorID}")
-    fun byCreator(@PathVariable creatorID: String): List<Document> {
-        return elasticsearchDocumentService.searchByCreator(creatorID = creatorID)
+    @GetMapping("by-creator")
+    fun byCreator(@RequestParam(required = false) creatorID: String?, principal: Principal?): List<Document> {
+        return elasticsearchDocumentService.searchByCreator(creatorID = creatorID ?: principal?.name ?: "nobody")
     }
+
     @GetMapping("by-corpus/{corpusID}")
     fun byCorpus(@PathVariable corpusID: Long): List<Document> {
         return elasticsearchDocumentService.searchByCorpusID(corpusID = corpusID, modifiedAfter = null)
