@@ -7,13 +7,14 @@ import com.amazonaws.services.dynamodbv2.document.spec.QuerySpec
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import org.springframework.stereotype.Service
+import java.time.Instant
 import java.util.*
 
 @Service
-class DocumentService(private val dynamoDB: DynamoDB,
-                      private val objectMapper: ObjectMapper) {
+class DynamoDBDocumentService(private val dynamoDB: DynamoDB,
+                              private val objectMapper: ObjectMapper) {
 
-    private val tableName = "TrainingDocuments"
+    private val tableName = "NERModelDocuments"
 
     /**
      * retrieves an single document / sentence by ID
@@ -42,54 +43,27 @@ class DocumentService(private val dynamoDB: DynamoDB,
         field update syntax that DynamoDB provides. Happy to take suggestions on how to improve this
          */
         val table = dynamoDB.getTable(tableName)
+        val now = Instant.now()
         return if (document.id != null) {
             val item = table.getItem(PrimaryKey("id", document.id))
             val originalDocument = objectMapper.readValue<Document>(item.toJSON())
             val documentWithAuthorPreserved = document.copy(
-                    createdByEmail = originalDocument.createdByEmail,
-                    createdBy = originalDocument.createdBy,
+                    creatorEmail = originalDocument.creatorEmail,
+                    creatorID = originalDocument.creatorID,
                     createdOn = originalDocument.createdOn,
-                    createdByNickname = originalDocument.createdByNickname,
-                    lastModifiedOn = System.currentTimeMillis()
+                    lastModifiedOn = now
             )
             table.putItem(Item.fromJSON(objectMapper.writeValueAsString(documentWithAuthorPreserved)))
             documentWithAuthorPreserved
         } else {
             val timestampedDocument = document.copy(
                     id = UUID.randomUUID().toString(),
-                    createdOn = System.currentTimeMillis(),
-                    lastModifiedOn = System.currentTimeMillis()
+                    createdOn = now,
+                    lastModifiedOn = now
             )
             table.putItem(Item.fromJSON(objectMapper.writeValueAsString(timestampedDocument)))
             return timestampedDocument
         }
-    }
-
-    /**
-     * query all documents created by the given creator in this corpus
-     */
-    fun getByCreator(creator: String, corpus: String): List<Document>? {
-        val table = dynamoDB.getTable(tableName)
-        val index = table.getIndex("createdBy-index")
-        val query = QuerySpec()
-                .withKeyConditionExpression("createdBy = :creator")
-                .withFilterExpression("corpus = :corpus")
-                .withValueMap(mapOf(":creator" to creator, ":corpus" to corpus))
-        val queryResult = index.query(query)
-        return queryResult.map { objectMapper.readValue<Document>(it.toJSON()) }
-    }
-
-    /**
-     * queries all documents in a given corpus modified after a certain date
-     */
-    fun getModifiedAfter(modifiedAfter: Long, corpus: String): List<Document> {
-        val table = dynamoDB.getTable(tableName)
-        val index = table.getIndex("corpus-lastModifiedOn-index")
-        val query = QuerySpec()
-                .withKeyConditionExpression("corpus = :corpus AND lastModifiedOn >= :modifiedAfter")
-                .withValueMap(mapOf(":modifiedAfter" to modifiedAfter, ":corpus" to corpus))
-        val queryResult = index.query(query)
-        return queryResult.map { objectMapper.readValue<Document>(it.toJSON()) }
     }
 
 }

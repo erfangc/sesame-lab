@@ -6,23 +6,33 @@ import java.security.Principal
 
 @RestController
 @CrossOrigin
-@RequestMapping("api/v1/document")
-class DocumentController(private val documentService: DocumentService,
+@RequestMapping("api/v1/documents")
+class DocumentController(private val dynamoDBDocumentService: DynamoDBDocumentService,
+                         private val elasticsearchDocumentService: ElasticsearchDocumentService,
                          private val userService: UserService) {
+
+    @GetMapping("by-creator/{creatorID}")
+    fun byCreator(@PathVariable creatorID: String): List<Document> {
+        return elasticsearchDocumentService.searchByCreator(creatorID = creatorID)
+    }
+    @GetMapping("by-corpus/{corpusID}")
+    fun byCorpus(@PathVariable corpusID: Long): List<Document> {
+        return elasticsearchDocumentService.searchByCorpusID(corpusID = corpusID, modifiedAfter = null)
+    }
 
     @DeleteMapping("{id}")
     fun delete(@PathVariable id: String, principal: Principal?) {
         val user = userService.getUserFromAuthenticatedPrincipal(principal)
-        val document = documentService.getById(id)
-        if (user.id != document.createdBy) {
+        val document = dynamoDBDocumentService.getById(id)
+        if (user.id != document.creatorID) {
             throw RuntimeException("you are not allowed to delete document $id")
         }
-        documentService.delete(id)
+        dynamoDBDocumentService.delete(id)
     }
 
     @GetMapping("{id}")
     fun get(@PathVariable id: String): Document {
-        return documentService.getById(id)
+        return dynamoDBDocumentService.getById(id)
     }
 
     @PostMapping
@@ -33,17 +43,8 @@ class DocumentController(private val documentService: DocumentService,
         based on authenticated principal and not user input
          */
         val user = userService.getUserFromAuthenticatedPrincipal(principal)
-        return documentService
-                .put(document.copy(
-                        lastModifiedBy = user.id,
-                        lastModifiedByEmail = user.email,
-                        lastModifiedByNickname = user.nickname)
-                )
-    }
-
-    @GetMapping("by-creator")
-    fun getByCreator(@RequestParam(required = false) creator: String?, @RequestParam corpusID: String, principal: Principal?): List<Document>? {
-        return documentService.getByCreator(creator ?: principal?.name ?: "anonymous", corpusID)
+        return dynamoDBDocumentService
+                .put(document.copy(lastModifiedUserID = user.id, lastModifiedUserEmail = user.email))
     }
 
 }

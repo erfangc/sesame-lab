@@ -1,17 +1,17 @@
 package com.erfangc.sesamelab.document
 
+import java.time.Instant
+
 data class Document(
         val id: String?,
         val content: String,
-        val corpus: String,
-        val createdOn: Long,
-        val createdBy: String,
-        val createdByEmail: String,
-        val createdByNickname: String,
-        val lastModifiedOn: Long,
-        val lastModifiedBy: String,
-        val lastModifiedByEmail: String,
-        val lastModifiedByNickname: String,
+        val corpusID: Long,
+        val creatorID: String,
+        val creatorEmail: String,
+        val createdOn: Instant,
+        val lastModifiedOn: Instant,
+        val lastModifiedUserID: String,
+        val lastModifiedUserEmail: String,
         val entities: List<TaggedEntity> = emptyList()
 )
 

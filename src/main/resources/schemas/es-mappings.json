@@ -1,23 +1,20 @@
 {
   "mappings": {
     "_doc": {
-      "properties":{
+      "properties": {
         "id": {
           "type": "keyword"
         },
         "content": {
           "type": "text"
         },
-        "corpus": {
+        "corpusID": {
+          "type": "long"
+        },
+        "creatorID": {
           "type": "keyword"
         },
-        "createdBy": {
-          "type": "keyword"
-        },
-        "createdByEmail": {
-          "type": "keyword"
-        },
-        "createdByNickname": {
+        "creatorEmail": {
           "type": "keyword"
         },
         "createdOn": {
@@ -26,14 +23,23 @@
         "entities": {
           "type": "nested",
           "properties": {
-            "type": {"type":"keyword"},
-            "value": {"type":"keyword"}
+            "type": {
+              "type": "keyword"
+            },
+            "value": {
+              "type": "keyword"
+            }
           }
         },
-        "lastModifiedBy": {"type":"keyword"},
-        "lastModifiedByEmail": {"type":"keyword"},
-        "lastModifiedByNickname": {"type":"keyword"},
-        "lastModifiedOn": {"type":"date"}
+        "lastModifiedUserID": {
+          "type": "keyword"
+        },
+        "lastModifiedUserEmail": {
+          "type": "keyword"
+        },
+        "lastModifiedOn": {
+          "type": "date"
+        }
       }
     }
   }

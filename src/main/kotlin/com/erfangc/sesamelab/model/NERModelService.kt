@@ -1,7 +1,8 @@
 package com.erfangc.sesamelab.model
 
 import com.amazonaws.services.s3.AmazonS3
-import com.erfangc.sesamelab.document.DocumentService
+import com.erfangc.sesamelab.document.Document
+import com.erfangc.sesamelab.document.DynamoDBDocumentService
 import com.erfangc.sesamelab.model.entities.NERModel
 import com.erfangc.sesamelab.model.repositories.NERModelRepository
 import opennlp.tools.namefind.NameFinderME
@@ -22,7 +23,7 @@ import java.time.format.DateTimeFormatter
 import java.util.*
 
 @Service
-class NERModelService(private val documentService: DocumentService,
+class NERModelService(private val dynamoDBDocumentService: DynamoDBDocumentService,
                       private val amazonS3: AmazonS3,
                       private val nerModelRepository: NERModelRepository) {
     private val logger = LoggerFactory.getLogger(NERModelService::class.java)
@@ -50,7 +51,7 @@ class NERModelService(private val documentService: DocumentService,
         val modifiedAfter = requestNER.modifiedAfter
         val user = requestNER.user
 
-        val trainingJSONs = documentService.getModifiedAfter(modifiedAfter = modifiedAfter, corpus = requestNER.corpusID)
+        val trainingJSONs = emptyList<Document>()
         val text = trainingJSONs.joinToString("\n") { it.content.replace("\n", "") }
         val lineStream = PlainTextByLineStream({ ByteArrayInputStream(text.toByteArray()) }, StandardCharsets.UTF_8)
         val sampleStream = NameSampleDataStream(lineStream)
