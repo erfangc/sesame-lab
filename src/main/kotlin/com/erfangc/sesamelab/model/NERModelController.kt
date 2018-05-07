@@ -28,7 +28,8 @@ class ModelController(private val trainingService: NERModelService,
     fun train(@RequestParam corpusID: Long,
               @RequestParam(required = false) name: String?,
               @RequestParam(required = false) description: String?,
-              @RequestParam(required = false) modifiedAfter: Long?, principal: Principal?): String {
+              @RequestParam(required = false) modifiedAfter: Long?,
+              principal: Principal?): String {
         val user = userService.getUserFromAuthenticatedPrincipal(principal)
         val request = TrainNERModelRequest(
                 corpusID = corpusID,
