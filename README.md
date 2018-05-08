@@ -71,6 +71,6 @@ browsing / navigation and free-form text search capabilities on top of our corpu
 This reduces the read burden on DynamoDB by reducing/eliminating scan queries and throughput requirements
 on GIS (Global Secondary Indices)
 
-## MySQL / Traditional RDMS
-We through in a MySQL database to store optional metadata. These are expected to be infrequently accessed
+## Postgres / Traditional RDMS
+We through in Postgres database to store optional metadata. These are expected to be infrequently accessed
 We could easily replace this with another DynamoDB table  
