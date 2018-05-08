@@ -1,8 +1,7 @@
 package com.erfangc.sesamelab.model
 
 import com.amazonaws.services.s3.AmazonS3
-import com.erfangc.sesamelab.document.Document
-import com.erfangc.sesamelab.document.DynamoDBDocumentService
+import com.erfangc.sesamelab.corpus.entities.Corpus
 import com.erfangc.sesamelab.document.ElasticsearchDocumentService
 import com.erfangc.sesamelab.model.entities.NERModel
 import com.erfangc.sesamelab.model.repositories.NERModelRepository
@@ -45,16 +44,16 @@ class NERModelService(private val amazonS3: AmazonS3,
      * we store the output model to S3, furthermore we store some metadata about the model to be reused later in
      * a SQL database
      */
-    fun train(requestNER: TrainNERModelRequest): String {
+    fun train(request: TrainNERModelRequest): String {
         /*
         preparing parameters / local variables
          */
         val id = UUID.randomUUID().toString()
-        val modifiedAfter = requestNER.modifiedAfter
-        val user = requestNER.user
+        val modifiedAfter = request.modifiedAfter
+        val user = request.user
 
         val trainingJSONs = elasticsearchDocumentService
-                .searchByCorpusID(corpusID = requestNER.corpusID, modifiedAfter = Instant.ofEpochMilli(modifiedAfter))
+                .searchByCorpusID(corpusID = request.corpusID, modifiedAfter = Instant.ofEpochMilli(modifiedAfter))
         val text = trainingJSONs.joinToString("\n") { it.content.replace("\n", "") }
         val lineStream = PlainTextByLineStream({ ByteArrayInputStream(text.toByteArray()) }, StandardCharsets.UTF_8)
         val sampleStream = NameSampleDataStream(lineStream)
@@ -72,10 +71,11 @@ class NERModelService(private val amazonS3: AmazonS3,
                 .save(
                         NERModel()
                                 .setCreatedOn(LocalDateTime.now().format(DateTimeFormatter.ISO_DATE_TIME))
-                                .setName(requestNER.name)
+                                .setName(request.name)
+                                .setCorpus(Corpus().setId(request.corpusID))
                                 .setUserID(user.id)
                                 .setFileLocation("s3://$bucketName/$id.bin")
-                                .setDescription(requestNER.description)
+                                .setDescription(request.description)
                 )
         logger.info("Wrote model metadata into database")
         modelOutFile.delete()

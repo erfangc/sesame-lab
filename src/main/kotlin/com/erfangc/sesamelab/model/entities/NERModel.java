@@ -15,7 +15,7 @@ public class NERModel {
     private String userID;
     private String createdOn;
     private String fileLocation;
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.EAGER)
     private Corpus corpus;
 
     public Long getId() {
