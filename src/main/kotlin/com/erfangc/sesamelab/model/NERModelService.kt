@@ -48,7 +48,7 @@ class NERModelService(private val amazonS3: AmazonS3,
         /*
         preparing parameters / local variables
          */
-        val id = UUID.randomUUID().toString()
+        val modelFilename = UUID.randomUUID().toString()
         val modifiedAfter = request.modifiedAfter
         val user = request.user
 
@@ -64,30 +64,31 @@ class NERModelService(private val amazonS3: AmazonS3,
                 TrainingParameters.defaultParams(),
                 TokenNameFinderFactory()
         )
-        val modelOutFile = File.createTempFile(id, ".bin")
+        val modelOutFile = File.createTempFile(modelFilename, ".bin")
         model.serialize(modelOutFile)
-        amazonS3.putObject(bucketName, "$id.bin", modelOutFile)
+        amazonS3.putObject(bucketName, "$modelFilename.bin", modelOutFile)
         nerModelRepository
                 .save(
                         NERModel()
                                 .setCreatedOn(LocalDateTime.now().format(DateTimeFormatter.ISO_DATE_TIME))
                                 .setName(request.name)
+                                .setModelFilename(modelFilename)
                                 .setCorpus(Corpus().setId(request.corpusID))
                                 .setUserID(user.id)
-                                .setFileLocation("s3://$bucketName/$id.bin")
+                                .setFileLocation("s3://$bucketName/$modelFilename.bin")
                                 .setDescription(request.description)
                 )
         logger.info("Wrote model metadata into database")
         modelOutFile.delete()
-        return id
+        return modelFilename
     }
 
-    fun run(modelID: String,
+    fun run(modelFilename: String,
             sentence: String): String {
         /*
         create the tokenizer - we need it to break up the incoming sentence
          */
-        logger.info("Creating tokenizer for $modelID, sentence=$sentence")
+        logger.info("Creating tokenizer, sentence=$sentence")
         val tokenModelIS = amazonS3.getObject(bucketName, "en-token.bin").objectContent
         logger.info("Loaded tokenizer model from S3")
 
@@ -98,11 +99,11 @@ class NERModelService(private val amazonS3: AmazonS3,
         load the trained model from S3
          */
         val modelInputStream = amazonS3
-                .getObject(bucketName, "$modelID.bin")
+                .getObject(bucketName, "$modelFilename.bin")
                 .objectContent
         val model = TokenNameFinderModel(modelInputStream)
 
-        logger.info("Loaded model: $modelID.bin")
+        logger.info("Loaded model: $modelFilename.bin")
         val nameFinder = NameFinderME(model)
         val tokens = tokenizer.tokenize(sentence)
         logger.info("Tokenized $sentence into ${tokens.map { it }}")

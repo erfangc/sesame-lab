@@ -1,6 +1,7 @@
 package com.erfangc.sesamelab.corpus.entities;
 
 import com.erfangc.sesamelab.model.entities.NERModel;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import javax.persistence.*;
 import java.util.List;
@@ -14,6 +15,7 @@ public class Corpus {
     private String userID;
     @OneToMany(orphanRemoval = true, cascade = CascadeType.ALL)
     private List<EntityConfiguration> entityConfigurations;
+    @JsonIgnore
     @OneToMany(mappedBy = "corpus")
     private List<NERModel> nerModels;
 

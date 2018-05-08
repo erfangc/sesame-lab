@@ -29,10 +29,10 @@ class ModelController(private val trainingService: NERModelService,
         return trainingService.train(request)
     }
 
-    @GetMapping("{modelID}/run")
-    fun run(@PathVariable modelID: String,
+    @GetMapping("{modelFilename}/run")
+    fun run(@PathVariable modelFilename: String,
             @RequestParam sentence: String): String {
-        return trainingService.run(modelID = modelID, sentence = sentence)
+        return trainingService.run(modelFilename = modelFilename, sentence = sentence)
     }
 
 }

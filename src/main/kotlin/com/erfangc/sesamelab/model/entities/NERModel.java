@@ -14,6 +14,7 @@ public class NERModel {
     private String description;
     private String userID;
     private String createdOn;
+    private String modelFilename;
     private String fileLocation;
     @ManyToOne(fetch = FetchType.EAGER)
     private Corpus corpus;
@@ -78,6 +79,15 @@ public class NERModel {
 
     public NERModel setCorpus(Corpus corpus) {
         this.corpus = corpus;
+        return this;
+    }
+
+    public String getModelFilename() {
+        return modelFilename;
+    }
+
+    public NERModel setModelFilename(String modelFilename) {
+        this.modelFilename = modelFilename;
         return this;
     }
 }
